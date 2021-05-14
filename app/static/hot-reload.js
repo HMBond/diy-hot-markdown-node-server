@@ -1,0 +1,33 @@
+function initHotReload({
+  port,
+  isReconnecting,
+  maxReconnectAttempts = -1,
+  timeOut = 2500,
+}) {
+  const ws = new WebSocket(`ws://localhost:${port}`);
+  ws.addEventListener('open', () => {
+    if (isReconnecting) {
+      console.log('\n[HotReload] socket is open again, refreshing...\n');
+      document.location.reload();
+    } else {
+      console.log(`[HotReload] connected to server on port ${port}\n`);
+    }
+  });
+  ws.addEventListener('message', () => {
+    console.log('\n[HotReload] refreshing...\n');
+    document.location.reload();
+  });
+  ws.addEventListener('close', () => {
+    setTimeout(() => {
+      if (!isReconnecting) {
+        console.log('[HotReload] connection lost - trying to connect...');
+      }
+      const tryAgain = maxReconnectAttempts !== 0;
+      if (ws.readyState === ws.CLOSED && tryAgain) {
+        maxReconnectAttempts--;
+        initHotReload({ port, isReconnecting: true, maxReconnectAttempts });
+      }
+    }, timeOut);
+  });
+}
+initHotReload({ port: 8080 });

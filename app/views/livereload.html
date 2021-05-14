@@ -1,9 +1,0 @@
-<script>
-  const ws = new WebSocket('ws://localhost:8080');
-  ws.onmessage = function (msg) {
-    if (msg === 'refresh please') {
-      document.location.reload(true);
-      console.log('refreshed!');
-    }
-  };
-</script>

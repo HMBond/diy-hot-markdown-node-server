@@ -3,6 +3,7 @@ import WebSocket from 'ws';
 import express from 'express';
 import escapeHtml from 'escape-html';
 import fs from 'fs';
+import chokidar from 'chokidar';
 import marked from 'marked';
 
 const app = express();
@@ -12,15 +13,14 @@ app.use(express.static('./app/static'));
 app.engine('md', function (path, options, fn) {
   fs.readFile(path, 'utf8', function (err, str) {
     if (err) return fn(err);
-    const head = fs.readFileSync('./app/views/head.html').toString();
-    const livereload = fs
-      .readFileSync('./app/views/livereload.html')
-      .toString();
-    //'<head><link rel="icon" type="image/png" href="/favicon.svg" /></head>';
-    const html = marked.parse(str).replace(/\{([^}]+)\}/g, function (_, name) {
-      return escapeHtml(options[name] || '');
-    });
-    fn(null, head + html + livereload);
+    const layout = fs.readFileSync('./app/layout.html').toString();
+    const content = marked
+      .parse(str)
+      .replace(/\{([^}]+)\}/g, function (_, name) {
+        return escapeHtml(options[name] || '');
+      });
+    const html = layout.replace('{content}', content);
+    fn(null, html);
   });
 });
 
@@ -30,39 +30,34 @@ app.set('views', './app/views/');
 app.set('view engine', 'md');
 
 app.get('/', function (req, res) {
-  res.render('index', { title: 'De Mike Show', favicon: './favicon.svg' });
+  res.render('index', { title: 'De Mike Show' });
 });
 
 // Create an instance of the http server to handle HTTP requests
-const server = createServer(app);
+createServer(app).listen(3000, () => {
+  console.log('[server] Listening on http://localhost:3000');
+});
 
-// client side hot reload/refresh
+// client side refresh
 const socketServer = new WebSocket.Server({
   port: 8080,
 });
 
 let sockets = [];
 socketServer.on('connection', function (socket) {
-  console.log('Connection made!');
   sockets.push(socket);
-
-  // When you receive a message, send that message to every socket.
-  socket.on('message', function (msg) {
-    sockets.forEach((s) => s.send(msg));
-  });
-
-  // When a socket closes, or disconnects, remove it from the array.
+  console.log(`[HotReload] New socket connected (${sockets.length})`);
   socket.on('close', function () {
     sockets = sockets.filter((s) => s !== socket);
+    console.log(`[HotReload] Socket disconnected (${sockets.length})`);
   });
 });
 
-var watchPath = './app/views';
-fs.watchFile(watchPath, (curr, prev) => {
-  console.log(`\n ${prev} was modified to ${curr}\n`);
-  sockets.forEach((s) => s.send('refresh please'));
-});
-
-server.listen(3000, () => {
-  console.log('Listening on http://localhost:3000');
-});
+// Initialize watcher for client refresh
+chokidar
+  .watch('app')
+  .on('error', (error) => console.log(`Watcher error: ${error}`))
+  .on('all', (event, path) => {
+    console.log(`[chokidar] ${event} ${path}`);
+    sockets.forEach((s) => s.send('refresh please'));
+  });

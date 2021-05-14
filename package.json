@@ -1,19 +1,20 @@
 {
-  "name": "de-mike-show",
+  "name": "diy-hot-markdown-node-server",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "nodemon -L server.js -e js,css,html,jpg,png --ignore app"
+    "dev": "nodemon -L server.js -e js,css,html,svg,jpg,png --ignore app"
   },
   "devDependencies": {
     "eslint": "^7.26.0"
   },
   "dependencies": {
+    "chokidar": "^3.5.1",
     "escape-html": "^1.0.3",
+    "socket.io": "^4.1.1",
     "express": "^4.17.1",
-    "marked": "^2.0.3",
-    "socket.io": "^4.1.1"
+    "marked": "^2.0.3"
   }
 }
