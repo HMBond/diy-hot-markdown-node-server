@@ -11,15 +11,15 @@ app.use(express.static('./app/static'));
 
 // register .md as an engine in express view system
 app.engine('md', function (path, options, fn) {
+  const layout = fs.readFileSync('./app/layout.html').toString();
   fs.readFile(path, 'utf8', function (err, str) {
     if (err) return fn(err);
-    const layout = fs.readFileSync('./app/layout.html').toString();
-    const content = marked
-      .parse(str)
+    const content = marked.parse(str);
+    const html = layout
+      .replace('{content}', content)
       .replace(/\{([^}]+)\}/g, function (_, name) {
         return escapeHtml(options[name] || '');
       });
-    const html = layout.replace('{content}', content);
     fn(null, html);
   });
 });
@@ -30,7 +30,7 @@ app.set('views', './app/views/');
 app.set('view engine', 'md');
 
 app.get('/', function (req, res) {
-  res.render('index', { title: 'De Mike Show' });
+  res.render('index', { headTitle: 'DIY Hot Reload - Markdown' });
 });
 
 // Create an instance of the http server to handle HTTP requests
