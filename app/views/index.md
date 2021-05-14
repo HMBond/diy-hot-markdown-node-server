@@ -29,8 +29,6 @@ _emphasis/italic_
 
 `more code`
 
-`whole code block!`
-
 ![Tux, the Linux mascot](/images/tux.png)
 
 My favorite search engine is [Ecosia](https://ecosia.org).

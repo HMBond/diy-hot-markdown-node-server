@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+import process from 'process';
 import { createServer } from 'http';
 import WebSocket from 'ws';
 import express from 'express';
@@ -5,6 +7,10 @@ import escapeHtml from 'escape-html';
 import fs from 'fs';
 import chokidar from 'chokidar';
 import marked from 'marked';
+
+dotenv.config();
+const PORT = process.env.PORT || 3000;
+const HOT_RELOAD_PORT = process.env.HOT_RELOAD_PORT || 8085;
 
 const app = express();
 app.use(express.static('./app/static'));
@@ -15,11 +21,20 @@ app.engine('md', function (path, options, fn) {
   fs.readFile(path, 'utf8', function (err, str) {
     if (err) return fn(err);
     const content = marked.parse(str);
-    const html = layout
+    let html = layout
       .replace('{content}', content)
       .replace(/\{([^}]+)\}/g, function (_, name) {
         return escapeHtml(options[name] || '');
       });
+
+    // add the client side websocket script for hot reload debugging
+    if (process.env.DEBUG) {
+      const hotReload = fs
+        .readFileSync('./app/hotreload.html')
+        .toString()
+        .replace('HOT_RELOAD_PORT', HOT_RELOAD_PORT);
+      html += hotReload;
+    }
     fn(null, html);
   });
 });
@@ -30,34 +45,37 @@ app.set('views', './app/views/');
 app.set('view engine', 'md');
 
 app.get('/', function (req, res) {
-  res.render('index', { headTitle: 'DIY Hot Reload - Markdown' });
-});
-
-// Create an instance of the http server to handle HTTP requests
-createServer(app).listen(3000, () => {
-  console.log('[server] Listening on http://localhost:3000');
-});
-
-// client side refresh
-const socketServer = new WebSocket.Server({
-  port: 8080,
-});
-
-let sockets = [];
-socketServer.on('connection', function (socket) {
-  sockets.push(socket);
-  console.log(`[HotReload] New socket connected (${sockets.length})`);
-  socket.on('close', function () {
-    sockets = sockets.filter((s) => s !== socket);
-    console.log(`[HotReload] Socket disconnected (${sockets.length})`);
+  res.render('index', {
+    headTitle: 'DIY Hot Reload - Markdown',
   });
 });
 
-// Initialize watcher for client refresh
-chokidar
-  .watch('app')
-  .on('error', (error) => console.log(`Watcher error: ${error}`))
-  .on('all', (event, path) => {
-    console.log(`[chokidar] ${event} ${path}`);
-    sockets.forEach((s) => s.send('refresh please'));
-  });
+// http server to handle HTTP requests
+createServer(app).listen(PORT, () => {
+  console.log(`[server] Listening on http://localhost:${PORT}`);
+});
+
+if (process.env.DEBUG) {
+  // socket server for hot reload
+  let sockets = [];
+  new WebSocket.Server({ port: HOT_RELOAD_PORT }).on(
+    'connection',
+    function (socket) {
+      sockets.push(socket);
+      console.log(`[HotReload] New socket connected (${sockets.length})`);
+      socket.on('close', function () {
+        sockets = sockets.filter((s) => s !== socket);
+        console.log(`[HotReload] Socket disconnected (${sockets.length})`);
+      });
+    },
+  );
+
+  // file watcher for hot reload
+  chokidar
+    .watch('app')
+    .on('error', (error) => console.log(`Watcher error: ${error}`))
+    .on('all', (event, path) => {
+      console.log(`[chokidar] ${event} ${path}`);
+      sockets.forEach((s) => s.send('refresh please'));
+    });
+}
