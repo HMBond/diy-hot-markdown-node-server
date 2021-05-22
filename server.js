@@ -27,12 +27,14 @@ app.engine('md', function (path, options, fn) {
         return escapeHtml(options[name] || '');
       });
 
-    // add the client side websocket script for hot reload debugging
     if (process.env.DEBUG) {
+      // add client side script for hot reload
       const hotReload = fs
         .readFileSync('./app/_hotreload.html')
         .toString()
         .replace('HOT_RELOAD_PORT', HOT_RELOAD_PORT);
+
+      // add a display element for showing errors
       const errorDisplay = fs
         .readFileSync('./app/_errorDisplay.html')
         .toString();
@@ -61,24 +63,21 @@ createServer(app).listen(PORT, () => {
 if (process.env.DEBUG) {
   // socket server for hot reload
   let sockets = [];
-  new WebSocket.Server({ port: HOT_RELOAD_PORT }).on(
-    'connection',
-    function (socket) {
-      sockets.push(socket);
-      console.log(`[HotReload] New socket connected (${sockets.length})`);
-      socket.on('close', function () {
-        sockets = sockets.filter((s) => s !== socket);
-        console.log(`[HotReload] Socket disconnected (${sockets.length})`);
-      });
-    },
-  );
+  new WebSocket.Server({ port: HOT_RELOAD_PORT }).on('connection', (socket) => {
+    sockets.push(socket);
+    console.log(`[HotReload] New socket connected (${sockets.length})`);
+    socket.on('close', () => {
+      sockets = sockets.filter((s) => s !== socket);
+      console.log(`[HotReload] Socket disconnected (${sockets.length})`);
+    });
+  });
 
   // file watcher for hot reload
   chokidar
     .watch('app')
     .on('error', (error) => console.log(`Watcher error: ${error}`))
-    .on('all', (event, path) => {
-      console.log(`[chokidar] ${event} ${path}`);
+    .on('all', (_, path) => {
+      console.log(`[chokidar] Watch ${path}`);
       sockets.forEach((s) => s.send('refresh please'));
     });
 }
