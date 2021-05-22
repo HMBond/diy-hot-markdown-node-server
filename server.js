@@ -30,10 +30,13 @@ app.engine('md', function (path, options, fn) {
     // add the client side websocket script for hot reload debugging
     if (process.env.DEBUG) {
       const hotReload = fs
-        .readFileSync('./app/hotreload.html')
+        .readFileSync('./app/_hotreload.html')
         .toString()
         .replace('HOT_RELOAD_PORT', HOT_RELOAD_PORT);
-      html += hotReload;
+      const errorDisplay = fs
+        .readFileSync('./app/_errorDisplay.html')
+        .toString();
+      html += hotReload + errorDisplay;
     }
     fn(null, html);
   });

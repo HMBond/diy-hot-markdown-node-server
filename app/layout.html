@@ -8,6 +8,14 @@
     <link rel="icon" type="image/png" href="/images/favicon.svg" />
   </head>
   <body>
+    <div class="jumbo">
+      <img src="/images/buddha.png" alt="buddha" class="trip-me" />
+    </div>
+    <button class="emergency-stop" onclick="trip.stop(true)">STOP</button>
     <main>{content}</main>
+    <script type="module">
+      import trippify from '/js/trippify.js';
+      window.trip = trippify('trip-me');
+    </script>
   </body>
 </html>

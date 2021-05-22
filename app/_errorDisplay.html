@@ -1,0 +1,37 @@
+<style>
+  #console-error-display {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: minmax(10vh, 75vh);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: larger;
+    padding: 12px 12ch;
+  }
+  #console-error-display svg {
+    position: absolute;
+    left: 4ch;
+    bottom: 2ch;
+    width: 4ch;
+  }
+  #console-error-display.hidden {
+    display: none;
+  }
+</style>
+
+<div id="console-error-display" class="hidden">
+  <svg viewBox="0 0 10 10">
+    <circle cx="5" cy="5" r="5" fill="red" />
+  </svg>
+</div>
+
+<script>
+  window.addEventListener('error', ({ error }) => {
+    var display = document.getElementById('console-error-display');
+    display.classList.remove('hidden');
+    console.log(error.stack);
+    display.innerHTML += '<pre>' + error.stack + '</pre>';
+  });
+</script>
