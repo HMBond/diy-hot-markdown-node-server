@@ -9,6 +9,7 @@
     "dev": "set DEBUG=true && nodemon -L . -e js,css,html,svg,jpg,png --ignore app"
   },
   "devDependencies": {
+    "nodemon": "^2.0.7",
     "eslint": "^7.26.0"
   },
   "dependencies": {
