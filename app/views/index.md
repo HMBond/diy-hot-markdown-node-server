@@ -18,8 +18,8 @@ _emphasis/italic_
 - First item
 - Second item
 
-- 1968\. A great year!
-- I think 1969 was second best.
+- 1969\. A great year!
+- I think 1988 was second best.
 
 > A blockquote
 
